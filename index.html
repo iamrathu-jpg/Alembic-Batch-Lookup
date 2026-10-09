@@ -1,0 +1,512 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#14233c">
+<meta name="robots" content="noindex,nofollow">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Batch Lookup">
+<title>Batch Purchase Lookup</title>
+<style>
+:root{
+  --bg:#f4f5f7;--panel:#fff;--ink:#1c2230;--muted:#667085;--line:#e3e6ec;
+  --accent:#1f5fae;--accent-soft:#e8f0fb;--ok:#137a4b;--warn:#a15c00;--navy:#14233c;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:14px/1.45 "Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;-webkit-text-size-adjust:100%}
+header{background:var(--navy);color:#fff;padding:14px 20px;padding-top:max(14px,env(safe-area-inset-top));display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+header h1{font-size:18px;margin:0;font-weight:600}
+header .sub{color:#aebbd0;font-size:12px}
+header .spacer{flex:1}
+header .meta{font-size:12px;color:#cfd8e6;text-align:right}
+.btn{border:1px solid var(--line);background:#fff;color:var(--ink);padding:8px 12px;border-radius:7px;cursor:pointer;font:inherit;font-size:13px}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn.primary:hover{background:#174b8b;color:#fff}
+header .btn{background:transparent;color:#fff;border-color:#3b5275}
+header .btn:hover{background:#22385c;color:#fff}
+main{padding:16px 20px;max-width:1500px;margin:0 auto}
+.search{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;display:grid;grid-template-columns:1.3fr 1.3fr 1fr auto;gap:12px;align-items:end}
+label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.03em}
+.field{position:relative}
+.field input{width:100%;padding:10px 34px 10px 11px;border:1px solid #cfd5df;border-radius:7px;font:inherit;font-size:16px;background:#fff}
+.field input:focus{outline:2px solid var(--accent-soft);border-color:var(--accent)}
+.field input.chosen{background:var(--accent-soft);border-color:#9dbbe3;font-weight:600}
+.field .x{position:absolute;right:6px;top:27px;border:0;background:none;color:var(--muted);font-size:22px;cursor:pointer;display:none;line-height:1;padding:6px}
+.field.has .x{display:block}
+.dd{position:absolute;left:0;right:0;top:100%;margin-top:2px;background:#fff;border:1px solid #cfd5df;border-radius:7px;box-shadow:0 8px 24px rgba(20,35,60,.15);max-height:340px;overflow:auto;z-index:20;display:none;-webkit-overflow-scrolling:touch}
+.dd.open{display:block}
+.dd div{padding:9px 10px;cursor:pointer;border-bottom:1px solid #f0f2f5}
+.dd div.act,.dd div:hover{background:var(--accent-soft)}
+.dd small{color:var(--muted);display:block;font-size:11.5px}
+.dd .none{color:var(--muted);cursor:default}
+.summary{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0 10px}
+.chip{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 12px}
+.chip b{display:block;font-size:18px}
+.chip span{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
+.hint{color:var(--muted);padding:30px;text-align:center;background:var(--panel);border:1px dashed #cfd5df;border-radius:10px;margin-top:14px}
+.tablewrap{background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:auto;max-height:calc(100vh - 290px)}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th{position:sticky;top:0;background:#eef1f5;text-align:left;padding:8px 10px;font-size:12px;color:#3d4757;border-bottom:1px solid var(--line);white-space:nowrap;cursor:pointer;user-select:none}
+th.num,td.num{text-align:right}
+td{padding:7px 10px;border-bottom:1px solid #f0f2f5;white-space:nowrap}
+tr:hover td{background:#fafbfd}
+td.ref{font-weight:700;color:var(--accent);font-family:Consolas,monospace;font-size:13.5px}
+td.mono,.mono{font-family:Consolas,"Roboto Mono",monospace}
+.copy{border:1px solid var(--line);background:#fff;border-radius:4px;font-size:11px;padding:2px 7px;margin-left:6px;cursor:pointer;color:var(--muted)}
+.copy:hover{color:var(--accent);border-color:var(--accent)}
+.copy.done{color:var(--ok);border-color:var(--ok)}
+.tag{font-size:11px;padding:1px 6px;border-radius:4px;background:#eef1f5;color:#3d4757}
+.tag.bs{background:#fff1dc;color:var(--warn)}
+.exp-past{color:#b42318;font-weight:600}
+.cname{max-width:260px;overflow:hidden;text-overflow:ellipsis}
+.pname{max-width:280px;overflow:hidden;text-overflow:ellipsis}
+.status{font-size:12px;color:var(--muted);margin-top:8px}
+/* cards (phone) */
+.cards{display:flex;flex-direction:column;gap:10px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px}
+.card .top{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.card .inv{font-family:Consolas,"Roboto Mono",monospace;font-weight:700;color:var(--accent);font-size:17px}
+.card .date{margin-left:auto;color:var(--muted);font-size:13px}
+.card .who{margin-top:6px;font-weight:600;font-size:13.5px}
+.card .what{color:#3d4757;font-size:13px}
+.card .grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:8px;font-size:13px}
+.card .grid span{display:block;color:var(--muted);font-size:10.5px;text-transform:uppercase;letter-spacing:.03em}
+.card .doc{margin-top:8px;font-size:12px;color:var(--muted)}
+/* modal & lock */
+.modal{position:fixed;inset:0;background:rgba(10,20,35,.45);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
+.modal.open{display:flex}
+.modal .box{background:#fff;border-radius:10px;padding:20px;width:min(560px,100%);max-height:92vh;overflow:auto}
+.modal h2{margin:0 0 8px;font-size:17px}
+.modal p{color:#3d4757;margin:6px 0}
+.log{background:#f6f7f9;border:1px solid var(--line);border-radius:6px;padding:8px;font-size:12.5px;max-height:180px;overflow:auto;white-space:pre-wrap;margin:10px 0}
+.foot{display:flex;gap:8px;justify-content:flex-end;margin-top:12px;flex-wrap:wrap}
+#lock{position:fixed;inset:0;background:var(--navy);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px}
+#lock .box{background:#fff;border-radius:14px;padding:26px 22px;width:min(380px,100%);text-align:center}
+#lock img{width:64px;height:64px;border-radius:14px}
+#lock h2{margin:12px 0 2px;font-size:19px}
+#lock p{color:var(--muted);margin:0 0 16px;font-size:13px}
+#lock input{width:100%;padding:12px;font-size:16px;border:1px solid #cfd5df;border-radius:8px;text-align:center}
+#lock .btn{width:100%;margin-top:10px;padding:12px;font-size:15px}
+#lock .err{color:#b42318;font-size:13px;min-height:18px;margin-top:8px}
+#lock.hide{display:none}
+@media(max-width:900px){.search{grid-template-columns:1fr}}
+@media(max-width:760px){
+  header{padding:12px 14px}
+  header h1{font-size:17px}
+  header .sub,.desk{display:none}
+  header .meta{font-size:11px}
+  main{padding:12px 12px 40px}
+  .search{padding:12px;gap:10px}
+  .chip{padding:6px 10px}.chip b{font-size:15px}
+  #btnClear{width:100%}
+}
+</style>
+</head>
+<body>
+<div id="lock">
+  <div class="box">
+    <img src="icon-192.png" alt="">
+    <h2>Batch Purchase Lookup</h2>
+    <p>Rathna Pharma Distributors · Alembic C&amp;F</p>
+    <form id="lockForm">
+      <input id="pw" type="password" placeholder="Enter password" autocomplete="current-password">
+      <button class="btn primary" type="submit" id="btnUnlock">Unlock</button>
+    </form>
+    <div class="err" id="lockErr"></div>
+  </div>
+</div>
+
+<header>
+  <div>
+    <h1>Batch Purchase Lookup</h1>
+    <div class="sub">Rathna Pharma Distributors · Alembic C&amp;F · Sales return reference finder</div>
+  </div>
+  <div class="spacer"></div>
+  <div class="meta" id="meta"></div>
+  <button class="btn desk" id="btnImport">Import SAP sales Excel</button>
+  <button class="btn" id="btnLock" title="Lock this device">Lock</button>
+</header>
+
+<main>
+  <div class="search">
+    <div class="field" id="fCust">
+      <label>Customer</label>
+      <input id="iCust" placeholder="Customer name, code or GSTIN" autocomplete="off">
+      <button class="x" title="Clear">×</button>
+      <div class="dd"></div>
+    </div>
+    <div class="field" id="fMat">
+      <label>Product</label>
+      <input id="iMat" placeholder="Product name or material code" autocomplete="off">
+      <button class="x" title="Clear">×</button>
+      <div class="dd"></div>
+    </div>
+    <div class="field" id="fBat">
+      <label>Batch</label>
+      <input id="iBat" placeholder="Batch number" autocomplete="off" autocapitalize="characters">
+      <button class="x" title="Clear">×</button>
+      <div class="dd"></div>
+    </div>
+    <div><button class="btn" id="btnClear">Clear all</button></div>
+  </div>
+  <div id="out"></div>
+</main>
+
+<div class="modal" id="mImport">
+  <div class="box">
+    <h2>Add new sales data</h2>
+    <p>Pick one or more SAP <b>Billing (TM) Details</b> Excel exports. A file that was already imported is skipped completely, even if it was renamed. Invoices already in the app are never added twice.</p>
+    <input type="file" id="fileIn" accept=".xlsx,.xls" multiple>
+    <div class="log" id="impLog" style="display:none"></div>
+    <p style="font-size:12px;font-weight:600;color:#667085;margin:12px 0 4px;text-transform:uppercase;letter-spacing:.03em">Files already loaded</p>
+    <div class="log" id="fileList" style="max-height:130px;margin-top:0"></div>
+    <p style="font-size:12.5px;color:#667085">Imported data shows only on this device until you publish it: click <b>Save encrypted data file</b>, then upload the downloaded <code>sales-data.enc</code> to the GitHub repo (replacing the old one). Every operator's phone picks it up the next time they open the app online.</p>
+    <div class="foot">
+      <button class="btn" id="btnClearImp">Remove imported data</button>
+      <button class="btn" id="btnSave">Save encrypted data file</button>
+      <button class="btn primary" id="btnClose">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ---------- helpers ---------- */
+let D; let custIdx={}, matIdx={}, batIdx={}, invIdx={}; let L=[];
+const fmtD=s=>s?s.slice(6,8)+'-'+s.slice(4,6)+'-'+s.slice(0,4):'';
+const fmtExp=s=>s?['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+s.slice(4,6)-1]+'-'+s.slice(0,4):'';
+const money=n=>n.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+const qtyF=n=>Number.isInteger(n)?n.toLocaleString('en-IN'):n.toLocaleString('en-IN',{maximumFractionDigits:3});
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const today=new Date().toISOString().slice(0,10).replace(/-/g,'');
+const LS={get(k){try{return localStorage.getItem(k);}catch(e){return null;}},set(k,v){try{localStorage.setItem(k,v);}catch(e){}},del(k){try{localStorage.removeItem(k);}catch(e){}}};
+const b64=u=>btoa(String.fromCharCode(...new Uint8Array(u)));
+const unb64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+const hex=u=>[...new Uint8Array(u)].map(b=>b.toString(16).padStart(2,'0')).join('');
+
+/* ---------- encrypted data file: "BPL1" | salt(16) | iv(12) | AES-GCM(gzip(json)) ---------- */
+const ITER=250000;
+let KEY=null, SALT=null;
+async function deriveKey(pw,salt){
+  const base=await crypto.subtle.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveKey']);
+  return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:ITER,hash:'SHA-256'},base,{name:'AES-GCM',length:256},true,['encrypt','decrypt']);
+}
+async function gunzip(u){const s=new Blob([u]).stream().pipeThrough(new DecompressionStream('gzip'));return await new Response(s).text();}
+async function gzip(t){const s=new Blob([t]).stream().pipeThrough(new CompressionStream('gzip'));return new Uint8Array(await new Response(s).arrayBuffer());}
+async function fetchEnc(){
+  const r=await fetch('sales-data.enc',{cache:'no-cache'});
+  if(!r.ok) throw new Error('Data file not found ('+r.status+')');
+  const u=new Uint8Array(await r.arrayBuffer());
+  if(String.fromCharCode(...u.slice(0,4))!=='BPL1') throw new Error('Data file is not in the expected format');
+  return {salt:u.slice(4,20),iv:u.slice(20,32),ct:u.slice(32)};
+}
+async function decryptWith(key,f){const p=await crypto.subtle.decrypt({name:'AES-GCM',iv:f.iv},key,f.ct);return JSON.parse(await gunzip(p));}
+async function encryptData(obj){
+  const iv=crypto.getRandomValues(new Uint8Array(12));
+  const ct=new Uint8Array(await crypto.subtle.encrypt({name:'AES-GCM',iv},KEY,await gzip(JSON.stringify(obj))));
+  const out=new Uint8Array(32+ct.length); out.set(new TextEncoder().encode('BPL1'),0); out.set(SALT,4); out.set(iv,20); out.set(ct,32);
+  return out;
+}
+
+/* ---------- unlock flow ---------- */
+const lock=document.getElementById('lock'), lockErr=document.getElementById('lockErr');
+let ENC=null;
+async function tryRemembered(){
+  const k=LS.get('bpl.key'), s=LS.get('bpl.salt');
+  if(!k||!s||hex(ENC.salt)!==s) return false;
+  try{
+    const key=await crypto.subtle.importKey('raw',unb64(k),{name:'AES-GCM'},true,['encrypt','decrypt']);
+    const data=await decryptWith(key,ENC); KEY=key; SALT=ENC.salt; await start(data); return true;
+  }catch(e){LS.del('bpl.key');return false;}
+}
+document.getElementById('lockForm').onsubmit=async e=>{
+  e.preventDefault();
+  const pw=document.getElementById('pw').value; if(!pw) return;
+  const btn=document.getElementById('btnUnlock'); btn.disabled=true; btn.textContent='Unlocking…'; lockErr.textContent='';
+  try{
+    if(!ENC) ENC=await fetchEnc();
+    const key=await deriveKey(pw,ENC.salt);
+    let data; try{data=await decryptWith(key,ENC);}catch(x){throw new Error('Wrong password');}
+    KEY=key; SALT=ENC.salt;
+    LS.set('bpl.key',b64(await crypto.subtle.exportKey('raw',key))); LS.set('bpl.salt',hex(ENC.salt));
+    await start(data);
+  }catch(err){lockErr.textContent=err.message;}
+  btn.disabled=false; btn.textContent='Unlock';
+};
+document.getElementById('btnLock').onclick=()=>{if(confirmLock()){LS.del('bpl.key');LS.del('bpl.salt');location.reload();}};
+function confirmLock(){return window.confirm('Lock the app on this device? The password will be needed again.');}
+
+/* ---------- data model ---------- */
+function reindex(){
+  custIdx={};matIdx={};batIdx={};invIdx={};
+  D.customers.forEach((c,i)=>custIdx[c[0]]=i);
+  D.materials.forEach((m,i)=>matIdx[m[0]]=i);
+  D.batches.forEach((b,i)=>batIdx[b[0]+'|'+b[1]]=i);
+  D.invoices.forEach((v,i)=>invIdx[v[0]]=i);
+  L=D.lines;
+  D._cs=D.customers.map(c=>(c[1]+' '+c[0]+' '+c[2]).toLowerCase());
+  D._ms=D.materials.map(m=>(m[1]+' '+m[0]).toLowerCase());
+}
+function addRows(rows){
+  const fresh=new Set(); let added=0, skipped=0;
+  const existing=new Set(Object.keys(invIdx));
+  for(const r of rows){
+    if(existing.has(r.doc)&&!fresh.has(r.doc)){skipped++;continue;}
+    fresh.add(r.doc);
+    if(custIdx[r.code]===undefined){custIdx[r.code]=D.customers.length;D.customers.push([r.code,r.cname,r.gstn]);}
+    else D.customers[custIdx[r.code]][1]=r.cname||D.customers[custIdx[r.code]][1];
+    if(matIdx[r.mat]===undefined){matIdx[r.mat]=D.materials.length;D.materials.push([r.mat,r.desc,r.div]);}
+    const bk=matIdx[r.mat]+'|'+r.batch;
+    if(batIdx[bk]===undefined){batIdx[bk]=D.batches.length;D.batches.push([matIdx[r.mat],r.batch,r.exp,r.mfg]);}
+    if(invIdx[r.doc]===undefined){invIdx[r.doc]=D.invoices.length;D.invoices.push([r.doc,r.ref,r.date,r.code,r.shipto,r.po]);}
+    D.lines.push([invIdx[r.doc],batIdx[bk],r.qty,r.val]); added++;
+  }
+  return {added,skipped,invoices:fresh.size};
+}
+
+/* ---------- local store for imports (admin device) ---------- */
+const DB_NAME='batchLookup', STORE='imports';
+function idb(){return new Promise((res,rej)=>{const r=indexedDB.open(DB_NAME,1);r.onupgradeneeded=()=>r.result.createObjectStore(STORE);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});}
+async function idbGet(k='rows'){try{const db=await idb();return await new Promise(res=>{const q=db.transaction(STORE).objectStore(STORE).get(k);q.onsuccess=()=>res(q.result||[]);q.onerror=()=>res([]);});}catch(e){return [];}}
+async function idbSet(v,k='rows'){try{const db=await idb();await new Promise(res=>{const t=db.transaction(STORE,'readwrite');t.objectStore(STORE).put(v,k);t.oncomplete=res;t.onerror=res;});}catch(e){}}
+async function fingerprint(buf){const h=await crypto.subtle.digest('SHA-256',buf);return hex(h);}
+let FILES=[];
+function fileList(){
+  const el=document.getElementById('fileList');
+  el.innerHTML=FILES.length?FILES.slice().reverse().map(f=>`<div>✔ ${esc(f.name)} <span style="color:#98a2b3">· ${f.lines.toLocaleString('en-IN')} lines · ${esc(f.date)}</span></div>`).join(''):'<div style="color:#98a2b3">None recorded</div>';
+}
+
+/* ---------- Excel import (SAP Billing (TM) Details) ---------- */
+function loadXLSX(){return new Promise((res,rej)=>{if(window.XLSX)return res();const s=document.createElement('script');s.src='xlsx.full.min.js';s.onload=res;s.onerror=()=>rej(new Error('Could not load the Excel reader'));document.head.appendChild(s);});}
+function parseSheet(wb){
+  const ws=wb.Sheets[wb.SheetNames[0]];
+  const A=XLSX.utils.sheet_to_json(ws,{header:1,raw:true,defval:''});
+  let h=A.findIndex(r=>r.includes('Billing Document')&&r.includes('Batch'));
+  if(h<0) throw new Error('Header row with "Billing Document" and "Batch" not found');
+  const H=A[h].map(x=>String(x).trim()); const col=n=>H.indexOf(n);
+  for(const n of ['Material Description','Material','Batch','Reference','Billing Document','Billing Date','Invoiced Quantity','Net Value','Payer']) if(col(n)<0) throw new Error('Column missing: '+n);
+  const cName=col('Name')>=0?col('Name'):col('Name 1');
+  const g=(r,n)=>{const i=col(n);return i<0?'':r[i];};
+  const dt=v=>{
+    if(v===''||v==null) return '';
+    if(typeof v==='number'){const d=XLSX.SSF.parse_date_code(v);return d?String(d.y)+String(d.m).padStart(2,'0')+String(d.d).padStart(2,'0'):'';}
+    const s=String(v).trim(); let m;
+    if(m=s.match(/^(\d{4})[-.\/](\d{1,2})[-.\/](\d{1,2})/)) return m[1]+m[2].padStart(2,'0')+m[3].padStart(2,'0');
+    if(m=s.match(/^(\d{1,2})[-.\/](\d{1,2})[-.\/](\d{4})/)) return m[3]+m[2].padStart(2,'0')+m[1].padStart(2,'0');
+    if(/^\d{8}$/.test(s)) return s; return '';
+  };
+  const out=[];
+  for(let i=h+1;i<A.length;i++){
+    const r=A[i]; const doc=String(g(r,'Billing Document')).trim(); if(!doc) continue;
+    const bt=String(g(r,'Billing Type')).trim();
+    if(bt && bt!=='ZD21' && bt!=='ZB21') continue;
+    const q=+g(r,'Invoiced Quantity')||0;
+    out.push({doc,ref:String(g(r,'Reference')).trim(),date:dt(g(r,'Billing Date')),
+      code:String(g(r,'Payer')).trim().replace(/^0+/,''),cname:String(r[cName]??'').trim(),gstn:String(g(r,'GSTN')).trim(),
+      shipto:String(g(r,'SHIPTO NAME')).trim(),po:String(g(r,'CUST PO')).trim(),
+      mat:String(g(r,'Material')).trim().replace(/^0+/,''),desc:String(g(r,'Material Description')).trim(),div:String(g(r,'Division')).trim(),
+      batch:String(g(r,'Batch')).trim(),exp:dt(g(r,'SLED/BBD')),mfg:dt(g(r,'Date of Manufacture')),
+      qty:Math.round(q*1000)/1000,val:Math.round((+g(r,'Net Value')||0)*100)/100});
+  }
+  return out;
+}
+
+/* ---------- typeahead ---------- */
+const sel={cust:null,mat:null,bat:null,batText:''};
+function makeTA(fieldId,key,source,onPick){
+  const f=document.getElementById(fieldId), inp=f.querySelector('input'), dd=f.querySelector('.dd'), x=f.querySelector('.x');
+  let items=[], act=-1;
+  function render(){
+    if(!D) return;
+    items=source(inp.value.trim().toLowerCase()); act=items.length?0:-1;
+    dd.innerHTML=items.length?items.map((it,i)=>`<div data-i="${i}" class="${i===act?'act':''}">${esc(it.label)}<small>${esc(it.sub||'')}</small></div>`).join(''):'<div class="none">No matches</div>';
+    dd.classList.add('open');
+  }
+  function pick(it){inp.value=it.label;inp.classList.add('chosen');f.classList.add('has');dd.classList.remove('open');inp.blur();onPick(it);}
+  inp.addEventListener('input',()=>{
+    if(sel[key]!==null){sel[key]=null;inp.classList.remove('chosen');}
+    f.classList.toggle('has',!!inp.value);
+    if(key==='bat'){sel.batText=inp.value.trim().toUpperCase();run();}
+    else if(!inp.value){run();}
+    render();
+  });
+  inp.addEventListener('focus',render);
+  inp.addEventListener('keydown',e=>{
+    if(!dd.classList.contains('open')) return;
+    if(e.key==='ArrowDown'){act=Math.min(act+1,items.length-1);upd();e.preventDefault();}
+    else if(e.key==='ArrowUp'){act=Math.max(act-1,0);upd();e.preventDefault();}
+    else if(e.key==='Enter'){if(items[act])pick(items[act]);e.preventDefault();}
+    else if(e.key==='Escape'){dd.classList.remove('open');}
+  });
+  function upd(){[...dd.children].forEach((c,i)=>c.classList.toggle('act',i===act));const a=dd.children[act];a&&a.scrollIntoView({block:'nearest'});}
+  dd.addEventListener('mousedown',e=>{const d=e.target.closest('[data-i]');if(d){pick(items[+d.dataset.i]);e.preventDefault();}});
+  inp.addEventListener('blur',()=>setTimeout(()=>dd.classList.remove('open'),150));
+  x.addEventListener('click',()=>{clear();run();inp.focus();});
+  function clear(){inp.value='';inp.classList.remove('chosen');f.classList.remove('has');sel[key]=null;if(key==='bat')sel.batText='';dd.classList.remove('open');}
+  return {clear,inp};
+}
+function scope(skip){
+  const out=[];
+  for(const l of L){
+    const inv=D.invoices[l[0]], b=D.batches[l[1]];
+    if(skip!=='cust'&&sel.cust!==null&&inv[3]!==sel.cust) continue;
+    if(skip!=='mat'&&sel.mat!==null&&b[0]!==sel.mat) continue;
+    if(skip!=='bat'){
+      if(sel.bat!==null&&l[1]!==sel.bat) continue;
+      if(sel.bat===null&&sel.batText&&!b[1].toUpperCase().includes(sel.batText)) continue;
+    }
+    out.push(l);
+  }
+  return out;
+}
+const words=q=>q.split(/\s+/).filter(Boolean);
+const taCust=makeTA('fCust','cust',q=>{
+  const ok=(sel.mat!==null||sel.bat!==null||sel.batText)?new Set(scope('cust').map(l=>D.invoices[l[0]][3])):null;
+  const w=words(q), res=[];
+  D.customers.forEach((c,i)=>{if(ok&&!ok.has(c[0]))return; if(w.every(t=>D._cs[i].includes(t))) res.push({label:c[1],sub:'Code '+c[0]+(c[2]?' · '+c[2]:''),v:c[0]});});
+  res.sort((a,b)=>a.label.localeCompare(b.label)); return res.slice(0,80);
+},it=>{sel.cust=it.v;run();});
+const taMat=makeTA('fMat','mat',q=>{
+  const ok=(sel.cust!==null||sel.bat!==null||sel.batText)?new Set(scope('mat').map(l=>D.batches[l[1]][0])):null;
+  const w=words(q), res=[];
+  D.materials.forEach((m,i)=>{if(ok&&!ok.has(i))return; if(w.every(t=>D._ms[i].includes(t))) res.push({label:m[1],sub:'Material '+m[0]+' · Div '+m[2],v:i});});
+  res.sort((a,b)=>a.label.localeCompare(b.label)); return res.slice(0,80);
+},it=>{sel.mat=it.v;run();});
+const taBat=makeTA('fBat','bat',q=>{
+  const s=scope('bat'); const agg=new Map();
+  for(const l of s){const b=D.batches[l[1]]; if(q&&!b[1].toLowerCase().includes(q))continue; const a=agg.get(l[1])||{q:0,n:0,last:''}; a.q+=l[2]; a.n++; const d=D.invoices[l[0]][2]; if(d>a.last)a.last=d; agg.set(l[1],a);}
+  const res=[...agg.entries()].map(([bi,a])=>{const b=D.batches[bi];return {label:b[1],sub:D.materials[b[0]][1]+' · Exp '+fmtExp(b[2])+' · '+a.n+' line(s), qty '+qtyF(a.q)+' · last '+fmtD(a.last),v:bi,last:a.last};});
+  res.sort((a,b)=>b.last.localeCompare(a.last)); return res.slice(0,80);
+},it=>{sel.bat=it.v;sel.batText='';run();});
+document.getElementById('btnClear').onclick=()=>{taCust.clear();taMat.clear();taBat.clear();run();};
+
+/* ---------- results ---------- */
+let sortKey='date', sortDir=-1;
+const phone=window.matchMedia('(max-width:760px)');
+phone.addEventListener&&phone.addEventListener('change',()=>D&&run());
+function run(){
+  const out=document.getElementById('out');
+  if(sel.cust===null&&sel.mat===null&&sel.bat===null&&!sel.batText){
+    out.innerHTML='<div class="hint">Pick a <b>customer</b>, <b>product</b> or <b>batch</b> to see the invoices it was billed on.<br>For a sales return: customer → product → batch.</div>';
+    return;
+  }
+  const s=scope(null);
+  let rows=s.map(l=>{const inv=D.invoices[l[0]],b=D.batches[l[1]],m=D.materials[b[0]],c=D.customers[custIdx[inv[3]]];
+    return {ref:inv[1],doc:inv[0],date:inv[2],code:inv[3],cname:c?c[1]:'',shipto:inv[4],po:inv[5],mat:m[0],desc:m[1],div:m[2],batch:b[1],exp:b[2],qty:l[2],val:l[3]};});
+  const tq=rows.reduce((a,r)=>a+r.qty,0), tv=rows.reduce((a,r)=>a+r.val,0);
+  const nInv=new Set(rows.map(r=>r.doc)).size, nCust=new Set(rows.map(r=>r.code)).size, nBat=new Set(rows.map(r=>r.mat+'|'+r.batch)).size;
+  const cmp={date:(a,b)=>a.date.localeCompare(b.date)||a.ref.localeCompare(b.ref),ref:(a,b)=>a.ref.localeCompare(b.ref),cname:(a,b)=>a.cname.localeCompare(b.cname),desc:(a,b)=>a.desc.localeCompare(b.desc),batch:(a,b)=>a.batch.localeCompare(b.batch),qty:(a,b)=>a.qty-b.qty,val:(a,b)=>a.val-b.val,exp:(a,b)=>a.exp.localeCompare(b.exp)};
+  rows.sort((a,b)=>sortDir*cmp[sortKey](a,b));
+  const isPhone=phone.matches, LIMIT=isPhone?300:2000, shown=rows.slice(0,LIMIT);
+  const showCust=sel.cust===null, showMat=sel.mat===null;
+  const summary=`<div class="summary">
+    <div class="chip"><b>${nInv.toLocaleString('en-IN')}</b><span>Invoices</span></div>
+    <div class="chip"><b>${qtyF(tq)}</b><span>Total qty</span></div>
+    <div class="chip"><b>₹ ${money(tv)}</b><span>Net value</span></div>
+    ${showCust?`<div class="chip"><b>${nCust}</b><span>Customers</span></div>`:''}
+    ${isPhone?'':`<div class="chip"><b>${nBat}</b><span>Batches</span></div>`}
+  </div>`;
+  const status=`<div class="status">${rows.length>LIMIT?`Showing first ${LIMIT.toLocaleString('en-IN')} of ${rows.length.toLocaleString('en-IN')} lines — narrow the search to see the rest.`:rows.length.toLocaleString('en-IN')+' line(s).'} Net rate = net value ÷ qty.</div>`;
+  if(isPhone){
+    out.innerHTML=summary+`<div class="cards">${shown.map(r=>`<div class="card">
+      <div class="top"><span class="inv">${esc(r.ref)}</span><button class="copy" data-c="${esc(r.ref)}">copy</button>${r.ref.startsWith('BS')?'<span class="tag bs">BoS</span>':''}<span class="date">${fmtD(r.date)}</span></div>
+      ${showCust?`<div class="who">${esc(r.cname)}</div>`:''}
+      ${showMat?`<div class="what">${esc(r.desc)}</div>`:''}
+      <div class="grid">
+        <div><span>Batch</span><b class="mono">${esc(r.batch)}</b></div>
+        <div><span>Expiry</span><b class="${r.exp&&r.exp<today?'exp-past':''}">${fmtExp(r.exp)}</b></div>
+        <div><span>Qty</span><b>${qtyF(r.qty)}</b></div>
+        <div><span>Net rate</span>${r.qty?money(r.val/r.qty):''}</div>
+        <div><span>Net value</span>${money(r.val)}</div>
+        <div><span>Cust PO</span>${esc(r.po)||'—'}</div>
+      </div>
+      <div class="doc">SAP doc <span class="mono">${esc(r.doc)}</span><button class="copy" data-c="${esc(r.doc)}">copy</button>${r.shipto?' · '+esc(r.shipto):''}</div>
+    </div>`).join('')}</div>`+status;
+    return;
+  }
+  const th=(k,t,cls='')=>`<th class="${cls}" data-k="${k}">${t}${sortKey===k?(sortDir>0?' ▲':' ▼'):''}</th>`;
+  out.innerHTML=summary+`<div class="tablewrap"><table>
+    <thead><tr>${th('ref','Invoice Ref')}<th>SAP Billing Doc</th>${th('date','Billing Date')}
+      ${showCust?th('cname','Customer'):''}${showMat?th('desc','Product'):''}
+      ${th('batch','Batch')}${th('exp','Expiry')}${th('qty','Qty','num')}<th class="num">Net Rate</th>${th('val','Net Value','num')}<th>Ship-to / Cust PO</th></tr></thead>
+    <tbody>${shown.map(r=>`<tr>
+      <td class="ref">${esc(r.ref)}<button class="copy" data-c="${esc(r.ref)}">copy</button>${r.ref.startsWith('BS')?' <span class="tag bs">BoS</span>':''}</td>
+      <td class="mono">${esc(r.doc)}<button class="copy" data-c="${esc(r.doc)}">copy</button></td>
+      <td>${fmtD(r.date)}</td>
+      ${showCust?`<td class="cname" title="${esc(r.cname)} (${r.code})">${esc(r.cname)}</td>`:''}
+      ${showMat?`<td class="pname" title="${esc(r.desc)} (${r.mat})">${esc(r.desc)}</td>`:''}
+      <td class="mono">${esc(r.batch)}</td>
+      <td class="${r.exp&&r.exp<today?'exp-past':''}">${fmtExp(r.exp)}</td>
+      <td class="num">${qtyF(r.qty)}</td><td class="num">${r.qty?money(r.val/r.qty):''}</td><td class="num">${money(r.val)}</td>
+      <td class="cname" title="${esc(r.shipto)} ${esc(r.po)}">${esc(r.shipto)}${r.po?` <span class="tag">${esc(r.po)}</span>`:''}</td>
+    </tr>`).join('')}</tbody></table></div>`+status;
+  out.querySelectorAll('th[data-k]').forEach(t=>t.onclick=()=>{const k=t.dataset.k; if(sortKey===k)sortDir=-sortDir; else{sortKey=k;sortDir=(k==='date'||k==='qty'||k==='val')?-1:1;} run();});
+}
+document.getElementById('out').addEventListener('click',e=>{
+  const b=e.target.closest('.copy'); if(!b) return; const t=b.dataset.c;
+  (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).catch(()=>{const ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();})
+    .finally(()=>{b.textContent='copied';b.classList.add('done');setTimeout(()=>{b.textContent='copy';b.classList.remove('done');},1200);});
+});
+
+let importedCount=0;
+function meta(){
+  let mn='99999999',mx='';
+  for(const v of D.invoices){if(v[2]&&v[2]<mn)mn=v[2];if(v[2]>mx)mx=v[2];}
+  document.getElementById('meta').innerHTML=`Data: <b>${fmtD(mn)}</b> to <b>${fmtD(mx)}</b><br>${D.invoices.length.toLocaleString('en-IN')} invoices${importedCount?` · <span style="color:#ffd27a">${importedCount.toLocaleString('en-IN')} lines imported here</span>`:''}`;
+}
+
+/* ---------- import modal (desktop admin) ---------- */
+const mI=document.getElementById('mImport'), log=document.getElementById('impLog');
+document.getElementById('btnImport').onclick=()=>mI.classList.add('open');
+document.getElementById('btnClose').onclick=()=>mI.classList.remove('open');
+function say(t){log.style.display='block';log.textContent+=t+'\n';log.scrollTop=1e9;}
+document.getElementById('fileIn').onchange=async e=>{
+  try{await loadXLSX();}catch(err){say(err.message);return;}
+  const stored=await idbGet(), storedFiles=await idbGet('files');
+  for(const f of e.target.files){
+    try{
+      say('Reading '+f.name+' …');
+      const buf=await f.arrayBuffer(); const h=await fingerprint(buf);
+      const dup=FILES.find(x=>x.h===h);
+      if(dup){say(`  ⊘ Skipped — this exact file was already imported${dup.name!==f.name?' as "'+dup.name+'"':''} on ${dup.date}. Nothing added.`);continue;}
+      const rows=parseSheet(XLSX.read(buf,{type:'array'}));
+      const before=new Set(Object.keys(invIdx)); const r=addRows(rows);
+      stored.push(...rows.filter(x=>!before.has(x.doc)));
+      const rec={h,name:f.name,date:new Date().toISOString().slice(0,10),lines:r.added}; FILES.push(rec); storedFiles.push(rec);
+      say(`  ✓ ${r.added.toLocaleString('en-IN')} lines added (${r.invoices.toLocaleString('en-IN')} invoices).`+(r.skipped?` ${r.skipped.toLocaleString('en-IN')} lines skipped — those invoices were already in the app.`:''));
+    }catch(err){say('  ✗ '+f.name+': '+err.message);}
+  }
+  await idbSet(stored); await idbSet(storedFiles,'files'); importedCount=stored.length;
+  reindex(); meta(); run(); fileList(); e.target.value='';
+};
+document.getElementById('btnClearImp').onclick=async()=>{await idbSet([]);await idbSet([],'files');say('Imported data removed. Reloading…');setTimeout(()=>location.reload(),600);};
+document.getElementById('btnSave').onclick=async()=>{
+  const o={v:2,built:new Date().toISOString().slice(0,10),customers:D.customers,materials:D.materials,batches:D.batches,invoices:D.invoices,lines:D.lines,files:FILES};
+  const bytes=await encryptData(o);
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([bytes],{type:'application/octet-stream'}));a.download='sales-data.enc';a.click();
+  say('Saved sales-data.enc (encrypted with the current password). Upload it to the GitHub repo, replacing the old file.');
+};
+
+/* ---------- start ---------- */
+async function start(data){
+  D=data; reindex(); FILES=(D.files||[]).slice();
+  const stored=await idbGet();
+  if(stored.length){addRows(stored);reindex();importedCount=stored.length;}
+  for(const f of await idbGet('files')) if(!FILES.some(x=>x.h===f.h)) FILES.push(f);
+  meta(); run(); fileList(); lock.classList.add('hide');
+}
+(async()=>{
+  if(!window.crypto||!crypto.subtle){lockErr.textContent='This page must be opened over https.';return;}
+  try{ENC=await fetchEnc(); if(await tryRemembered()) return;}catch(e){lockErr.textContent=e.message;}
+  document.getElementById('pw').focus();
+})();
+if('serviceWorker' in navigator && location.protocol==='https:') navigator.serviceWorker.register('sw.js');
+</script>
+</body>
+</html>
